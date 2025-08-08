@@ -15,6 +15,8 @@ return {
 
       require'lspconfig'.awk_ls.setup{}
 
+      require'lspconfig'.gopls.setup{}
+
       require("lspconfig").basedpyright.setup {
         settings = {
           basedpyright = {
