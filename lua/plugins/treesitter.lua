@@ -7,7 +7,7 @@ return {
       require "nvim-treesitter.configs".setup {
         -- A list of parser names, or "all" (the listed parsers MUST always be installed)
         -- The must list is "c", "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline"
-        ensure_installed = { "bash", "c", "diff", "html", "lua", "luadoc", "vim", "vimdoc", "query", "markdown", "markdown_inline", "python" },
+        ensure_installed = { "bash", "c", "diff", "html", "lua", "luadoc", "vim", "vimdoc", "query", "markdown", "markdown_inline", "python", "sql"},
         -- Automatically install missing parsers when entering buffer
         -- Recommendation: set to false if you don't have `tree-sitter` CLI installed locally
         auto_install = true,
