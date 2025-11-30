@@ -3,8 +3,8 @@ vim.keymap.set("n", "<leader>x", "<cmd>:.lua<CR>", { desc = "Execute the current
 vim.keymap.set("v", "<leader>x", ":'<,'>lua<CR>", { desc = "Execute the current visual selection" })
 
 -- Disable PageUp and PageDown
-vim.keymap.set({"n", "i", "x"}, "<PageUp>", '<cmd>echo "Disabled! Use <C-B> instead"<CR>')
-vim.keymap.set({"n", "i", "x"}, "<PageDown>", '<cmd>echo "Disabled! Use <C-F> instead"<CR>')
+vim.keymap.set({ "n", "i", "x" }, "<PageUp>", '<cmd>echo "Disabled! Use <C-B> instead"<CR>')
+vim.keymap.set({ "n", "i", "x" }, "<PageDown>", '<cmd>echo "Disabled! Use <C-F> instead"<CR>')
 
 -- Disable arrow keys
 vim.keymap.set("n", "<left>", '<cmd>echo "Use h to move!!"<CR>')
@@ -38,11 +38,12 @@ vim.keymap.set("n", "n", "nzzzv", { desc = "Keep search terms centered on the sc
 vim.keymap.set("n", "N", "Nzzzv", { desc = "Keep search terms centered on the screen when going up" })
 
 -- From ThePrimeagen
-vim.keymap.set({"n", "v"}, "<leader>y", [["+y]], { desc = "[Y]ank into the system clipboard" })
+vim.keymap.set({ "n", "v" }, "<leader>y", [["+y]], { desc = "[Y]ank into the system clipboard" })
 vim.keymap.set("n", "<leader>Y", [["+Y]], { desc = "[Y]ank lines into the system clipboard" })
 
 -- From ThePrimeagen
-vim.keymap.set("n", "<leader>b", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], { desc = "su[B]stitute all matches under the cursor interactively" })
+vim.keymap.set("n", "<leader>b", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
+  { desc = "su[B]stitute all matches under the cursor interactively" })
 
 -- From ThePrimeagen
 vim.keymap.set("n", "<A-k>", "<cmd>cnext<CR>zz", { desc = "Better next quickfix navigation" })
@@ -53,8 +54,17 @@ vim.keymap.set("n", "<leader>j", "<cmd>lprev<CR>zz", { desc = "Better previous l
 -- From ThePrimeagen
 vim.keymap.set("x", "<leader>p", [["_dP]], { desc = "[P]aste over selection while preserving paste register" })
 
-vim.keymap.set("n", "<leader>mj", "<cmd>!chmod +x %<CR>", { desc = "Change the current file's [M]ode to exec[J]utable", silent = true })
+vim.keymap.set("n", "<leader>mj", "<cmd>!chmod +x %<CR>",
+  { desc = "Change the current file's [M]ode to exec[J]utable", silent = true })
 
 vim.keymap.set("n", "<leader>pv", vim.cmd.Ex)
 -- Remaps for default LSP integration
 -- See: https://github.com/neovim/neovim/pull/28650/files#diff-49225a49c226c2f1b36f966d0178c556e204cdc0b660c80db9e4568e03f6ef99
+
+-- Create a small terminal window
+vim.keymap.set("n", "<leader>st", function()
+  vim.cmd.vnew()
+  vim.cmd.term()
+  vim.cmd.wincmd("J")
+  vim.api.nvim_win_set_height(0, 15)
+end, { desc = "Create a [S]mall [T]erminal window horizontal split" })
