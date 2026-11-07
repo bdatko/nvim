@@ -27,10 +27,14 @@ uv run tests/run.py --skip-quality   # offline/debug only; not acceptance
 ```
 
 Check IDs: `preflight`, `static`, `startup`, `attach`, `keymaps`, `messages`,
-`deprecated`, `enabled`, `smoke`, `quality` (Phase 2 adds `pins`, `lockfile`).
+`deprecated`, `enabled`, `pins`, `lockfile`, `smoke`, `quality`.
 
 The harness prints one `== <check> == PASS|FAIL` line per check and exits nonzero
 if any selected check fails.
+
+`pins` asserts every plugin spec reports `pin = true` and that the pinned set
+matches `lazy-lock.json`. `lockfile` asserts the lockfile is tracked by git and
+that every installed plugin HEAD equals its locked commit.
 
 The `smoke` check runs headless functional checks for the manual matrix:
 `M1`–`M13` map to `== smoke/M1 == … == smoke/M13 ==` lines. It asserts LSP

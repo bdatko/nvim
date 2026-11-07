@@ -1,6 +1,7 @@
 return {
   {
     "nvim-treesitter/nvim-treesitter",
+    pin = true,
     build = ":TSUpdate",
     config = function()
       ---@diagnostic disable-next-line: missing-fields

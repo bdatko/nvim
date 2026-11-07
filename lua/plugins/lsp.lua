@@ -1,12 +1,14 @@
 return {
   {
     "neovim/nvim-lspconfig",
+    pin = true,
     dependencies = {
-      "folke/lazydev.nvim",
-      ft = "lua",
-      opts = { library = { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+      {
+        "folke/lazydev.nvim",
+        ft = "lua",
+        pin = true,
+        opts = { library = { path = "${3rd}/luv/library", words = { "vim%.uv" } } },
       },
-
     },
     config = function()
       -- nvim-lspconfig v2 ships server defaults in its `lsp/` directory.

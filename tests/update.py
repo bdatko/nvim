@@ -61,12 +61,14 @@ def lazy_root() -> Path:
         timeout=60,
     )
 
-    if proc.returncode != 0 or not proc.stdout.strip():
+    # Headless Neovim can write `print()` output to stderr.
+    output = proc.stdout.strip() or proc.stderr.strip()
+    if proc.returncode != 0 or not output:
         raise click.ClickException(
             f"could not determine Neovim data dir: {proc.stderr.strip()}"
         )
 
-    return Path(proc.stdout.strip().splitlines()[-1]) / "lazy"
+    return Path(output.splitlines()[-1]) / "lazy"
 
 
 def lockfile_plugins() -> dict[str, dict[str, str]]:
@@ -167,6 +169,7 @@ def verify_pins() -> None:
     root = lazy_root()
     names = sorted(plugins)
     before = plugin_heads(root, names)
+    before_lock = LOCKFILE.read_text(encoding="utf-8")
 
     proc = run_nvim(["+Lazy! update", "+qa"])
     print_output(proc)
@@ -175,17 +178,22 @@ def verify_pins() -> None:
         raise click.ClickException(f":Lazy! update failed (exit {proc.returncode})")
 
     after = plugin_heads(root, names)
+    after_lock = LOCKFILE.read_text(encoding="utf-8")
     moved = [name for name in names if before[name] != after[name]]
+    lock_changed = before_lock != after_lock
 
+    # Informational: the tree may already be dirty before this command runs.
     diff = run(["git", "diff", "--stat", "--", "lazy-lock.json"], timeout=60)
     diff_output = diff.stdout.strip()
 
     if moved:
         click.echo(f"moved plugins: {' '.join(moved)}", err=True)
+    if lock_changed:
+        click.echo("lazy-lock.json changed during :Lazy! update", err=True)
     if diff_output:
-        click.echo(diff_output, err=True)
+        click.echo(f"pre-existing lockfile diff: {diff_output}", err=True)
 
-    if moved or diff_output:
+    if moved or lock_changed:
         click.echo("== verify-pins == FAIL")
         raise SystemExit(1)
 

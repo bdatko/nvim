@@ -37,6 +37,8 @@ CHECK_IDS = (
     "messages",
     "deprecated",
     "enabled",
+    "pins",
+    "lockfile",
     "smoke",
     "quality",
 )
@@ -130,6 +132,7 @@ class Context:
     tmp: Path
     verbose: bool
     attach_data: dict[str, Any] | None = None
+    pins_data: dict[str, Any] | None = None
 
 
 def emit(name: str, ok: bool, detail: str = "") -> bool:
@@ -176,6 +179,19 @@ def run_nvim(
 
 
 def load_json(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+
+    return data if isinstance(data, dict) else None
+
+
+def read_lockfile() -> dict[str, Any] | None:
+    path = ROOT / "lazy-lock.json"
     if not path.exists():
         return None
 
@@ -576,6 +592,123 @@ def check_enabled(ctx: Context) -> bool:
     return emit("enabled", not problems, detail)
 
 
+def run_pins(ctx: Context) -> dict[str, Any] | None:
+    if ctx.pins_data is not None:
+        return ctx.pins_data
+
+    output = ctx.tmp / "pins.json"
+    env = {
+        "NVIM_TEST_PINS_PROBE": str(PROBES / "pins.lua"),
+        "NVIM_TEST_PINS_OUT": str(output),
+    }
+    proc = run_nvim(
+        [
+            "-u",
+            str(ROOT / "init.lua"),
+            "-c",
+            "lua dofile(vim.env.NVIM_TEST_PINS_PROBE)",
+        ],
+        env_extra=env,
+        timeout=120,
+    )
+    print_probe_output(proc, verbose=ctx.verbose)
+
+    data = load_json(output)
+    if data is None:
+        click.echo(f"pins probe produced no output (exit {proc.returncode})", err=True)
+        ctx.pins_data = {}
+        return None
+
+    ctx.pins_data = data
+    return data
+
+
+def check_pins(ctx: Context) -> bool:
+    data = run_pins(ctx)
+    if not data:
+        return emit("pins", False, "pins probe produced no output")
+
+    plugins = data.get("plugins", [])
+    if not isinstance(plugins, list) or not plugins:
+        return emit("pins", False, "pins probe returned no plugins")
+
+    lockfile = read_lockfile()
+    if lockfile is None:
+        return emit("pins", False, "missing or invalid lazy-lock.json")
+
+    expected = set(lockfile)
+    names = {str(plugin.get("name")) for plugin in plugins}
+    unpinned = [str(plugin.get("name")) for plugin in plugins if not plugin.get("pin")]
+    missing = expected - names
+    unexpected = names - expected
+    problems: list[str] = []
+
+    if unpinned:
+        problems.append(f"unpinned: {' '.join(sorted(unpinned))}")
+    if missing:
+        problems.append(f"missing: {' '.join(sorted(missing))}")
+    if unexpected:
+        problems.append(f"unexpected: {' '.join(sorted(unexpected))}")
+
+    detail = (
+        "; ".join(problems) if problems else f"{len(expected)}/{len(expected)} pinned"
+    )
+    return emit("pins", not problems, detail)
+
+
+def check_lockfile(ctx: Context) -> bool:
+    lockfile = read_lockfile()
+    if lockfile is None:
+        return emit("lockfile", False, "missing or invalid lazy-lock.json")
+
+    tracked = run_command(["git", "ls-files", "--error-unmatch", "lazy-lock.json"])
+    if tracked.returncode != 0:
+        return emit("lockfile", False, "lazy-lock.json is not tracked by git")
+
+    data = run_pins(ctx)
+    if not data:
+        return emit("lockfile", False, "pins probe produced no output")
+
+    plugins = {
+        str(plugin.get("name")): plugin
+        for plugin in data.get("plugins", [])
+        if isinstance(plugin, dict)
+    }
+    problems: list[str] = []
+    matched = 0
+
+    for name, info in sorted(lockfile.items()):
+        plugin = plugins.get(name)
+        if plugin is None:
+            problems.append(f"{name}: not installed")
+            continue
+
+        commit = str(info.get("commit", "")) if isinstance(info, dict) else ""
+        proc = run_command(
+            ["git", "-C", str(plugin.get("dir", "")), "rev-parse", "HEAD"],
+            timeout=60,
+        )
+
+        if proc.returncode != 0:
+            problems.append(f"{name}: cannot read HEAD")
+            continue
+
+        head = proc.stdout.strip()
+        if not commit or head != commit:
+            problems.append(f"{name}: {head[:7]} != {commit[:7]}")
+        else:
+            matched += 1
+
+    installed = set(plugins)
+    unexpected = installed - set(lockfile)
+    problems.extend(f"{name}: not in lockfile" for name in sorted(unexpected))
+
+    detail = (
+        "; ".join(problems) if problems else f"{matched}/{len(lockfile)} commits match"
+    )
+    return emit("lockfile", not problems, detail)
+
+
 def check_smoke(ctx: Context) -> bool:
     output = ctx.tmp / "smoke.json"
     env = {
@@ -685,6 +818,10 @@ def main(
             check_deprecated(ctx)
         if "enabled" in selected:
             check_enabled(ctx)
+        if "pins" in selected:
+            check_pins(ctx)
+        if "lockfile" in selected:
+            check_lockfile(ctx)
         if "smoke" in selected:
             check_smoke(ctx)
         if "quality" in selected:
