@@ -1,6 +1,7 @@
 return {
   {
     "echasnovski/mini.nvim",
+    pin = true,
     config = function()
         -- Better Around/Inside textobjects
       --
