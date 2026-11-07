@@ -89,24 +89,35 @@ return {
         "ruff",
       })
 
+      -- Neovim 0.12 ships unconditional defaults for these keys. Re-set them
+      -- once so keymap search keeps the descriptive labels; the functions are
+      -- the built-ins, so behavior matches the defaults.
+      vim.keymap.set("n", "grn", vim.lsp.buf.rename,
+        { desc = "[G]oing [R]ight into re[N]ame" })
+      vim.keymap.set({ "n", "x" }, "gra", vim.lsp.buf.code_action,
+        { desc = "[G]oing [R]ight into code [A]ction" })
+      vim.keymap.set("n", "gri", vim.lsp.buf.implementation,
+        { desc = "[G]oing [R]ight into [I]mplementation" })
+      vim.keymap.set({ "i", "s" }, "<C-S>", vim.lsp.buf.signature_help,
+        { desc = "[S]ignature help" })
+
+      -- Created once: the previous version re-created the detach augroup with
+      -- clear = true on every attach, so only the newest buffer cleaned up.
+      local highlight_augroup = vim.api.nvim_create_augroup("kickstart-lsp-highlight", { clear = true })
+      local detach_augroup = vim.api.nvim_create_augroup("kickstart-lsp-detach", { clear = true })
+
+      vim.api.nvim_create_autocmd("LspDetach", {
+        group = detach_augroup,
+        callback = function(event)
+          vim.lsp.buf.clear_references()
+          vim.api.nvim_clear_autocmds({ group = highlight_augroup, buf = event.buf })
+        end,
+      })
+
       vim.api.nvim_create_autocmd("LspAttach", {
         callback = function(args)
           local client = vim.lsp.get_client_by_id(args.data.client_id)
           if not client then return end
-          -- rename the variable under your cursor.
-          -- most language servers support renaming across files, etc.
-          if client:supports_method("textDocument/rename") then
-            vim.keymap.set("n", "grn",
-              function() vim.lsp.buf.rename() end,
-              { desc = "[G]oing [R]ight into re[N]ame" })
-          end
-          if client:supports_method("textDocument/codeAction") then
-            -- Execute a code action, usually your cursor needs to be on top of an error
-            -- or a suggestion from your LSP for this to activate.
-            vim.keymap.set({ "n", "x" }, "gra",
-              function() vim.lsp.buf.code_action() end,
-              { desc = "[G]oing [R]ight into code [A]ction" })
-          end
           if client:supports_method("textDocument/references") then
             -- Find references for the word under your cursor.
             vim.keymap.set("n", "grr",
@@ -120,29 +131,13 @@ return {
               function() require("telescope.builtin").lsp_document_symbols() end,
               { desc = "[G]lobal [O]verview of document symbols" })
           end
-          if client:supports_method("textDocument/signatureHelp") then
-            -- Displays signature information about the symbol under the
-            -- cursor in a floating window.
-            vim.keymap.set("i", "<C-S>",
-              function() vim.lsp.buf.signature_help() end,
-              { desc = "[S]ignature help" })
-          end
-          if client:supports_method("textDocument/implementation") then
-            -- Create a keymap for vim.lsp.buf.implementation
-            -- Jump to the implementation of the word under your cursor.
-            -- Useful when your language has ways of declaring types without an actual implementation.
-            vim.keymap.set("n", "gri",
-              function() vim.lsp.buf.implementation() end,
-              { desc = "[G]oing [R]ight into [I]mplementation" }
-            )
-          end
           if client:supports_method("textDocument/definition") then
             -- Jump to the definition of the word under your cursor.
             -- This is where a variable was first declared, or where a function is defined, etc.
             -- To jump back, press <C-t>.
             vim.keymap.set("n", "grd",
               function() require("telescope.builtin").lsp_definitions() end,
-              { desc = "[G]oing [R]ight into [D]efinitins" })
+              { desc = "[G]oing [R]ight into [D]efinitions" })
           end
           if client:supports_method("textDocument/typeDefinition") then
             -- Jump to the type of the word under your cursor.
@@ -176,8 +171,7 @@ return {
           --    See `:help CursorHold` for information about when this is executed
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
-          if client and client:supports_method("textDocument/documentHighlight") then
-            local highlight_augroup = vim.api.nvim_create_augroup("kickstart-lsp-highlight", { clear = false })
+          if client:supports_method("textDocument/documentHighlight") then
             vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
               buf = args.buf,
               group = highlight_augroup,
@@ -188,14 +182,6 @@ return {
               buf = args.buf,
               group = highlight_augroup,
               callback = vim.lsp.buf.clear_references,
-            })
-
-            vim.api.nvim_create_autocmd("LspDetach", {
-              group = vim.api.nvim_create_augroup("kickstart-lsp-detach", { clear = true }),
-              callback = function(event2)
-                vim.lsp.buf.clear_references()
-                vim.api.nvim_clear_autocmds { group = "kickstart-lsp-highlight", buf = event2.buf }
-              end,
             })
           end
         end,

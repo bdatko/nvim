@@ -69,3 +69,9 @@ vim.opt.swapfile = false
 -- see :h g:python3_host_prog
 -- this added a lot to the startup time without specificing a neovim venv
 vim.g.loaded_python3_provider = 0
+
+-- Node, Perl, and Ruby remote-plugin providers are unused here; disabling
+-- them keeps :checkhealth vim.provider clean and trims startup work.
+vim.g.loaded_node_provider = 0
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_ruby_provider = 0

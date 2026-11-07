@@ -144,14 +144,18 @@ local function supports(bufnr, client_name, method)
   return false
 end
 
-local function desc(lhs)
-  local mapping = vim.fn.maparg(lhs, "n", false, true)
+local function desc_mode(lhs, mode)
+  local mapping = vim.fn.maparg(lhs, mode, false, true)
 
   if type(mapping) == "table" then
     return mapping.desc
   end
 
   return nil
+end
+
+local function desc(lhs)
+  return desc_mode(lhs, "n")
 end
 
 local function to_lsp_diagnostic(diagnostic)
@@ -272,9 +276,27 @@ do
     problems[#problems + 1] = "no rename support"
   end
 
-  for _, lhs in ipairs({ "grn", "gra", "grr", "grd", "gO" }) do
+  for _, lhs in ipairs({ "grr", "gO" }) do
     if desc(lhs) == nil then
       problems[#problems + 1] = lhs .. " missing"
+    end
+  end
+
+  -- The four Neovim 0.12 default keys are hoisted to a startup block; assert
+  -- the exact custom descriptions survive, and that grd's typo is fixed.
+  local expected = {
+    { "grn", "n", "[G]oing [R]ight into re[N]ame" },
+    { "gra", "n", "[G]oing [R]ight into code [A]ction" },
+    { "gri", "n", "[G]oing [R]ight into [I]mplementation" },
+    { "grd", "n", "[G]oing [R]ight into [D]efinitions" },
+    { "<C-S>", "i", "[S]ignature help" },
+    { "<C-S>", "s", "[S]ignature help" },
+  }
+  for _, case in ipairs(expected) do
+    local lhs, mode, want = case[1], case[2], case[3]
+    local got = desc_mode(lhs, mode)
+    if got ~= want then
+      problems[#problems + 1] = string.format("%s/%s desc=%s", lhs, mode, tostring(got))
     end
   end
 
