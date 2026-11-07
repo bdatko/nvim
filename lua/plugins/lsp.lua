@@ -9,13 +9,15 @@ return {
 
     },
     config = function()
-      require("lspconfig").lua_ls.setup {}
+      require "lspconfig".lua_ls.setup {}
 
-      require 'lspconfig'.biome.setup {single_file_support = true}
+      require "lspconfig".biome.setup {single_file_support = true}
 
-      require'lspconfig'.awk_ls.setup{}
+      require "lspconfig".awk_ls.setup{}
 
-      require'lspconfig'.gopls.setup{}
+      require "lspconfig".gopls.setup{}
+
+      require "lspconfig".taplo.setup{}
 
       require("lspconfig").basedpyright.setup {
         settings = {
