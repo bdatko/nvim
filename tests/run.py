@@ -102,6 +102,8 @@ FIXTURES = {
         "}\n"
     ),
     "smoke.ts": ("const value: number = 1;\n\nif (value == 1) {\n  debugger;\n}\n"),
+    "smoke.md": "# Smoke\n\n```lua\nlocal value = 1\n```\n",
+    "smoke.sh": "cat <<EOF\nhello\nEOF\n",
     "biome.json": (
         '{\n  "$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",\n'
         '  "linter": { "enabled": true }\n}\n'
