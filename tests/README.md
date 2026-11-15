@@ -37,11 +37,12 @@ matches `lazy-lock.json`. `lockfile` asserts the lockfile is tracked by git and
 that every installed plugin HEAD equals its locked commit.
 
 The `smoke` check runs headless functional checks for the manual matrix:
-`M1`–`M13` map to `== smoke/M1 == … == smoke/M13 ==` lines. It asserts LSP
+`M1`–`M14` map to `== smoke/M1 == … == smoke/M14 ==` lines. It asserts LSP
 diagnostics, hover/definition/references/document-symbol responses, Ruff and
-Biome code actions, Biome's project-only attach behavior, Treesitter parsers
-and queries, and that the colorscheme/undotree/mini/ibl/telescope modules load.
-Purely visual rendering is still manual.
+Biome code actions, Biome's project-only attach behavior, Treesitter parsers,
+queries, and injection parsing (Markdown fences, Bash heredocs), and that the
+colorscheme/undotree/mini/ibl/telescope modules load. Purely visual rendering
+is still manual.
 
 ## Combined acceptance command
 

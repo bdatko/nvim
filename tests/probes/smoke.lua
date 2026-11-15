@@ -611,5 +611,27 @@ do
   add("M13", #problems == 0, join(problems, "tokyonight, undotree, mini, ibl"))
 end
 
+debug("M14 start")
+-- M14: injection parsing must not error (Markdown fences, Bash heredocs).
+do
+  local problems = {}
+
+  for _, item in ipairs({
+    { file = "smoke.md", lang = "markdown" },
+    { file = "smoke.sh", lang = "bash" },
+  }) do
+    local bufnr = open(proj .. "/" .. item.file, nil)
+    local ok, err = pcall(function()
+      vim.treesitter.get_parser(bufnr, item.lang):parse(true) -- true forces injections
+    end)
+
+    if not ok then
+      problems[#problems + 1] = item.lang .. ": " .. tostring(err)
+    end
+  end
+
+  add("M14", #problems == 0, join(problems, "markdown fence + bash heredoc"))
+end
+
 vim.fn.writefile({ vim.json.encode({ checks = results }) }, out)
 vim.cmd("qa!")

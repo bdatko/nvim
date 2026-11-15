@@ -28,6 +28,19 @@ return {
           additional_vim_regex_highlighting = false,
         },
       }
+
+      -- nvim-treesitter master (pinned cf12346a) predates Neovim 0.12's change to
+      -- pass query captures as lists. Its legacy directives call
+      -- vim.treesitter.get_node_text() with the whole capture list, which crashes
+      -- injection parsing (Markdown fences, Bash/Ruby heredocs, ...).
+      -- Remove once the plugin moves to the `main` branch.
+      local get_node_text = vim.treesitter.get_node_text
+      vim.treesitter.get_node_text = function(node, source, opts)
+        if type(node) == "table" then
+          node = node[1]
+        end
+        return get_node_text(node, source, opts)
+      end
     end,
   }
 }
